@@ -2,8 +2,8 @@
 % Please edit documentation in R/shadow_vimp_survival.R
 \name{shadow_vimp_survival}
 \alias{shadow_vimp_survival}
-\title{Select influential covariates in random forests using multiple testing
-control}
+\title{Select influential covariates using random forest with multiple-testing
+control in the survival-data setting.}
 \usage{
 shadow_vimp_survival(
   alphas = c(0.3, 0.1, 0.05),
@@ -29,11 +29,17 @@ step of the procedure, default \code{c(30, 120, 1500)}.}
 
 \item{data}{Input data frame.}
 
-\item{num.trees}{Numeric, number of trees. Passed to \code{\link[ranger:ranger]{ranger::ranger()}},
+\item{time_column}{Character, name of the column containing the event time.}
+
+\item{status_column}{Character, name of the column containing the status
+indicator. The current implementation of the function supports the
+competing-risks setting.}
+
+\item{num.trees}{Numeric, number of trees. Passed to \code{\link[randomForestSRC:rfsrc]{randomForestSRC::rfsrc()}},
 default is \code{max(2 * (ncol(data) - 1), 10000)}.}
 
 \item{importance}{Character, the type of variable importance to be calculated
-for each variable. Argument passed to \code{\link[ranger:ranger]{ranger::ranger()}}, default is
+for each variable. Argument passed to \code{\link[randomForestSRC:rfsrc]{randomForestSRC::rfsrc()}}, default is
 \code{permutation}.}
 
 \item{save_vimp_history}{Character, specifies which variable importance
@@ -69,39 +75,41 @@ show the p-values obtained using the "per variable" approach and the
 corresponding decisions.
 }}
 
-\item{...}{Additional parameters passed to \code{\link[ranger:ranger]{ranger::ranger()}}.}
+\item{na.action}{Character, one of \code{"na.omit"} (default) or \code{"na.impute"}.
+Action to take when the data contain \code{NA}. By default,
+\code{shadow_vimp_survival()} excludes rows with missing values in any covariate.
+When \code{na.action = "na.impute"}, missing values are imputed using the
+imputation algorithm. See \code{\link[randomForestSRC:rfsrc]{randomForestSRC::rfsrc()}} and the vignette on this
+package’s survival-data extension for details.}
 
-\item{outcome_var}{Character, name of the column containing the outcome
-variable.}
-
-\item{num.threads}{Numeric. The number of threads used by \code{\link[ranger:ranger]{ranger::ranger()}}
-for parallel tree building. If \code{NULL} (the default), half of the available
-CPU threads are used (this is the default behaviour in \code{shadow_vimp()},
-which is different from the default in \code{\link[ranger:ranger]{ranger::ranger()}}). See the
-\code{\link[ranger:ranger]{ranger::ranger()}} documentation for more details.}
+\item{...}{Additional parameters passed to \code{\link[randomForestSRC:rfsrc]{randomForestSRC::rfsrc()}}.}
 }
 \value{
-Object of the class "shadow_vimp" with the following entries:
+Object of the class "shadow_vimp_survival" with the following entries:
 \itemize{
 \item \code{call} - the call formula used to generate the output.
 \item \code{alpha} - numeric, significance level used in the algorithm.
-\item \code{step_all_covariates_removed} - integer. If > 0, the step number at which
-all candidate covariates were deemed insignificant and removed. If 0, at
-least one covariate survived the pre-selection until the last step of the
+\item \code{step_all_covariates_removed} - Numeric vector specifying the step at
+which all candidate covariates were deemed insignificant and removed. If the
+input data include competing risks, the vector records this step separately
+for each event. If the value is 0 for a given event, it means that at least
+one covariate survived the pre-selection through the final step of the
 procedure.
-\item \code{final_dec_pooled} (the default) or \code{final_dec_per_variable} -  a data
-frame that contains, depending on the specified value of the \code{to_show}
-parameter, p-values and corresponding decisions (in columns with names
-ending in \code{confirmed}) if the variable is deemed informative at the final
-step of the procedure: 1 = covariate considered informative in the last
-step; 0 = not informative. If all covariates were dropped in the
-pre-selection, i.e. none reached the final step, then all p-values are NA
-and all decisions are set to 0.
-\item \code{vimp_history}- if \code{save_vimp_history} is set to \code{"all"} or \code{"last"} then
-it is a data frame with VIMPs of covariates and their shadows from the last
-step of the procedure. If \code{save_vimp_history} is set to \code{"none"}, then it
-is \code{NULL}.
-\item \code{time_elapsed} - list containing the runtime of each step and the total
+\item Per-event decision data frame(s) — one data frame per event (e.g., with
+competing risks one will get two: one for the event of interest and one for
+the competing event). The data frame name starts with \code{final_dec_pooled}
+(default) or \code{final_dec_per_variable}, depending on the method parameter.
+Contents depend on \code{to_show} and include: p-values and decision columns
+(names end with \verb{_confirmed}) indicating whether a covariate is deemed
+informative at the final step of the procedure: 1 = informative, 0 = not
+informative. If all covariates were dropped during pre-selection (i.e., none
+reached the final step), all p-values are \code{NA} and all decisions are 0.
+\item Per-event data frame named with the prefix \code{vimp_history}. If
+\code{save_vimp_history} is set to \code{"all"} or \code{"last"}, this data frame contains
+the VIMPs of covariates and their shadows from the final step of the
+procedure for the event indicated by the object’s name. If
+\code{save_vimp_history} is \code{"none"}, this element is \code{NULL}.
+\item \code{time_elapsed} - list containing the run time of each step and the total
 time taken to execute the code.
 \item \code{pre_selection} -  list in which the results of the pre-selection are
 stored. The exact form of this element depends on the chosen value of the
@@ -109,79 +117,95 @@ stored. The exact form of this element depends on the chosen value of the
 }
 }
 \description{
-\code{shadow_vimp()} performs variable selection and determines whether each
-covariate is influential based on unadjusted, FDR-adjusted, and FWER-adjusted
-p-values.
+\code{shadow_vimp_survival()} performs variable selection and determines whether
+each covariate is influential based on unadjusted, FDR-adjusted, and
+FWER-adjusted p-values.This is the surviva equivalent of \code{shadow_vimp()}.
 }
 \details{
-The \code{shadow_vimp()} function by default performs variable selection in
-multiple steps. Initially, it prunes the set of predictors using a relaxed
+\strong{Input data}:
+The \code{shadow_vimp_survival()} function uses the survival random forest
+implementation from \insertCite{rfpackage}{shadowVIMP}. Permissible input data
+types are numeric (real-valued), integer, factor, or logical.
+
+\strong{Pre-selection}:
+The \code{shadow_vimp_survival()} function by default performs variable selection
+in multiple steps. Initially, it prunes the set of predictors using a relaxed
 (higher) alpha threshold in a pre-selection stage. Variables that pass this
 stage then undergo a final evaluation using the target (lower) alpha
 threshold and more iterations. This stepwise approach distinguishes
 informative from uninformative covariates based on their VIMPs and enhances
 computational efficiency. The user can also perform variable selection in a
 single step, without a pre-selection phase.
+
+\strong{Missing values}:
+Missing values in both outcomes and predictors can be imputed using the
+algorithm introduced in \insertCite{missing_val_alg}{shadowVIMP}. For details
+of the imputation algorithm, see the original paper or the survival-data
+vignette of this package.
 }
 \examples{
-data(mtcars)
+data(veteran, package = "randomForestSRC")
 
 # When working with real data, use higher values for the niters and num.trees
 # parameters --> here these parameters are set to small values to reduce the
 # runtime.
 
-# Function to make sure proper number of cores is specified
-safe_num_threads <- function(n) {
-  available <- parallel::detectCores()
-  if (n > available) available else n
-}
-
-# Standard use
-out1 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs",
-  niters = c(10, 20, 30), num.trees = 30, num.threads = safe_num_threads(1)
-)
-
-\donttest{
-# `num.threads` sets the number of threads for multithreading in
-# `ranger::ranger`. By default, the `shadow_vimp` function uses half the
-# available CPU threads.
-out2 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs",
-  niters = c(10, 20, 30), num.threads = safe_num_threads(2),
-  num.trees = 30
+# Standard use - sruvival data without missing values or competing risks
+out_veteran1 <- shadow_vimp_survival(
+  data = veteran, time_column = "time", status_column = "status",
+  niters = c(10, 20, 30), num.trees = 10
 )
 
 # Save variable importance measures only from the final step of the
 # procedure
-out4 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs",
-  niters = c(10, 20, 30), save_vimp_history = "last", num.trees = 30,
-  num.threads = safe_num_threads(1)
+out_veteran2 <- shadow_vimp_survival(
+  data = veteran, time_column = "time", status_column = "status",
+  niters = c(10, 20, 30), save_vimp_history = "last", num.trees = 10
 )
 
 # Print unadjusted and FDR-adjusted p-values together with the corresponding
 # decisions
-out5 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs",
-  niters = c(10, 20, 30), to_show = "FDR", num.trees = 30,
-  num.threads = safe_num_threads(1)
+out_veteran3 <- shadow_vimp_survival(
+  data = veteran, time_column = "time", status_column = "status",
+  niters = c(10, 20, 30), to_show = "FDR", num.trees = 10
 )
 
 # Use per-variable p-values to decide in the final step whether a covariate
 # is informative or not. Note that pooled p-values are always used in the
 # pre-selection (first two steps).
-out6 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs",
-  niters = c(10, 20, 30), method = "per_variable", num.trees = 30,
-  num.threads = safe_num_threads(1)
+out_veteran4 <- shadow_vimp_survival(
+  data = veteran, time_column = "time", status_column = "status",
+  niters = c(10, 20, 30), method = "per_variable", num.trees = 10
 )
 
 # Perform variable selection in a single step, without a pre-selection phase
-out7 <- shadow_vimp(
-  data = mtcars, outcome_var = "vs", alphas = c(0.05),
-  niters = c(30), num.trees = 30,
-  num.threads = safe_num_threads(1)
+out_veteran5 <- shadow_vimp_survival(
+  data = veteran, time_column = "time", status_column = "status",
+  alphas = c(0.05), niters = c(30), num.trees = 10
 )
+
+# shadowVIMP on survival data with missing values in the predictor
+# For illustration, we create an artificial covariate with missing values for
+# three subjects. By default shadow_vimp_survival(), excludes rows with
+# missing values in any covariate.
+new_var <-  sample.int(8, nrow(veteran) - 3, replace = TRUE)
+veteran_na <- cbind(veteran, var1 = c(new_var, rep(NA, 3)))
+
+out_veteran_na <- shadow_vimp_survival(data = veteran_na,
+ time_column = "time", status_column = "status",
+ niters = c(5, 10, 12), num.trees = 10)
+
+# It is also possible to impute missing values
+out_veteran_impute_na <- shadow_vimp_survival(data = veteran_na,
+ time_column = "time", status_column = "status",
+ na.action = "na.impute", niters = c(5, 10, 12), num.trees = 10)
+
+# shadowVIMP on survival data with competing risk
+data(wihs, package = "randomForestSRC")
+out_wihs <- shadow_vimp_survival(data = wihs,
+time_column = "time", status_column = "status",
+niters = c(5, 10, 12), num.trees = 10)
 }
+\references{
+\insertAllCited{}
 }

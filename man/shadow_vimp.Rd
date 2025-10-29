@@ -2,7 +2,7 @@
 % Please edit documentation in R/shadow_vimp.R
 \name{shadow_vimp}
 \alias{shadow_vimp}
-\title{Select influential covariates in random forests using multiple testing
+\title{Select influential covariates by using random forests with multiple testing
 control}
 \usage{
 shadow_vimp(

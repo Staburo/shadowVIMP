@@ -1,4 +1,4 @@
-#' Select influential covariates in random forests using multiple testing
+#' Select influential covariates by using random forests with multiple testing
 #' control
 #'
 #' `shadow_vimp()` performs variable selection and determines whether each

@@ -1,13 +1,13 @@
-# TODO: update documentation
 #' Identify significant covariates with FWER, FDR, or no multiple testing
-#' adjustment
+#' adjustment in the survival-data setting.
 #'
 #' Calculate p-values using pooled or per variable approach and identify
 #' significant variables using FWER, FDR or no multiple testing adjustment of
-#' p-values for a given alpha level of significance.
+#' p-values for a given alpha level of significance. This is the survival
+#' equivalent of `add_test_results()`.
 #'
-#' @param vimpermsim List, an output of the `vim_perm_sim()` function that
-#'   stores `niters` variable importance values for both the original and
+#' @param vimpermsim List, an output of the `vim_perm_sim_survival()` function
+#'   that stores `niters` variable importance values for both the original and
 #'   row-wise permuted predictors.
 #' @param alpha Numeric, the significance level, must be between 0 and 1.
 #' @param init_num_vars Numeric, the number of covariates originally included in
@@ -18,63 +18,64 @@
 #'   Benjamini-Hochberg (FDR) and Holm (FWER) adjusted p-values together with
 #'   the decision whether the variable is significant or not (1 - significant, 0
 #'   means not significant) according to the chosen criterium.
-#'  * `"FDR"` - the output includes both unadjusted and FDR adjusted p-values along
-#'   with the decision.
+#'  * `"FDR"` - the output includes both unadjusted and FDR adjusted p-values
+#'   along with the decision.
 #'  * `"unadjusted:` - the output contains only raw, unadjusted p-values together
 #'   with the decision.
-#' @return A list of length 3 containing the following elements:
-#'  * `vim_simulated` -  a data frame with variable importances stored in a
-#'   `vimpermsim` input object (obtained from the `vim_perm_sim()` function).
-#'  * `test_results` - a list consisting of 2 data frames called `pooled` and
-#'   `per_variable`. The `pooled` data frame contains p-values obtained using
-#'   the "pooled" approach. The `per_variable` data frame stores p-values
-#'   obtained by using the "per variable" approach. Both data frames also
-#'   contain decisions about variable importance based on the displayed
-#'   p-values. The type of decisions displayed (based on FWER/FDR/unadjusted
-#'   p-values) depends on the selected value of the `to_show` parameter.
-#'
-#'   In fact, the output of the `add_test_results()` function is the output of
-#'   `vim_perm_sim()` with an additional layer - the `test_results` list.
+#' @return A list with at least three elements. Its exact length depends on the
+#' number of event levels in the input data (e.g., if status has levels
+#' censoring, event, competing event, the list will have 4 elements: one data
+#' frame per non-censoring event plus two lists).
+#'  * Per-event data frames: For each non-censoring event in the input, the output
+#'    contains a data frame named after that event. Example: if events are coded
+#'    as 0 = censoring, 1 - event, and 2 - competing risk, the object includes two
+#'    data frames: `event.1` and `event.2`. Each per-event data frame reports the
+#'    variable and shadow importances produced by `vim_perm_sim_survival()`.
+#'  * `test_res_pooled` - a list with one data frame per event, containing
+#'    p-values computed using the pooled approach.
+#'  * `test_res_per_variable` - a list with one data frame per event, containing
+#'    p-values computed using the per-variable approach.
+#'  All data frames within test_res_pooled and test_res_per_variable also include
+#'  decision columns that flag variable importance based on the displayed
+#'  p-values. Which decisions are shown (e.g., FWER, FDR, or unadjusted) is
+#'  controlled by the to_show parameter.
 #' @noRd
 #' @import dplyr
 #' @importFrom magrittr %>%
 #' @importFrom stats p.adjust median ecdf sd
 #' @examples
-#' data(mtcars)
+#' # Standard survival data: Veterans' Administration Lung Cancer study data
+#' data(veteran, package = "randomForestSRC")
 #' # Create vimpermsim object first
 #' # When working with real data, increase num.trees value or leave default
-#' # Here this parameter is set to a small value in order to reduce the runtime
-#' # Function to make sure proper number of cores is specified for multithreading
-#' safe_num_threads <- function(n) {
-#'   available <- parallel::detectCores()
-#'   if (n > available) available else n
-#' }
-#' cars_vps <- vim_perm_sim(
-#'   data = mtcars, outcome_var = "vs", niters = 30,
-#'   num.trees = 50, num.threads = safe_num_threads(1)
-#' )
-#' init_num_vars <- ncol(x = mtcars) - 1
+#' # Here this parameter is set to a small value in order to reduce the run time
+#' veteran_vps <- vim_perm_sim_survival(data = veteran,
+#'  time_column = "time",
+#'  status_column = "status",
+#'  niters = 30,
+#'  num.trees = 10)
+#'
+#' init_num_vars <- ncol(veteran) - 2
 #'
 #' # Display decisions based on all available p-values (FWER, FDR, unadjusted)
-#' cars_add_fwer <- add_test_results(
-#'   vimpermsim = cars_vps, alpha = 0.05,
+#' veteran_add_fwer <- add_test_results_survival(
+#'   vimpermsim = veteran_vps, alpha = 0.05,
 #'   init_num_vars = init_num_vars
 #' )
 #'
 #' # Display decisions based on FDR adjusted and unadjusted p-values,
 #' # expected warning
-#' cars_add_fdr <- suppressWarnings(add_test_results(
-#'   vimpermsim = cars_vps, alpha = 0.05,
+#' veteran_add_fdr <- suppressWarnings(add_test_results(
+#'   vimpermsim = veteran_vps, alpha = 0.05,
 #'   init_num_vars = init_num_vars, to_show = "FDR"
 #' ))
 #'
 #' # Display decisions based on unadjusted p-values (Type1_confirmed column),
 #' # expected warning
-#' cars_add_unadj <- suppressWarnings(add_test_results(
-#'   vimpermsim = cars_vps, alpha = 0.05,
+#' veteran_add_unadj <- suppressWarnings(add_test_results(
+#'   vimpermsim = veteran_vps, alpha = 0.05,
 #'   init_num_vars = init_num_vars, to_show = "unadjusted"
 #' ))
-# TODO: adjust examples and documentation
 add_test_results_survival <- function(vimpermsim,
                                       alpha = 0.05,
                                       init_num_vars,

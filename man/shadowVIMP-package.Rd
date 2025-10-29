@@ -6,7 +6,7 @@
 \alias{shadowVIMP-package}
 \title{shadowVIMP: Covariate Selection Based on VIMP Permutation-Like Testing}
 \description{
-A statistical method for reducing the number of covariates in an analysis by evaluating Variable Importance Measures (VIMPs) derived from the Random Forest algorithm. It performs statistical tests on the VIMPs and outputs whether the covariate is significant along with the p-values.
+A statistical method for reducing the number of covariates in an analysis by evaluating Variable Importance Measures (VIMPs) derived from the Random Forest algorithm. The method performs statistical tests on VIMPs using permuted shadow variables to compute p-values, while preserving the correlation structure among predictors. It supports multiple testing adjustments and outputs significance flags for each covariate.
 }
 \seealso{
 Useful links:

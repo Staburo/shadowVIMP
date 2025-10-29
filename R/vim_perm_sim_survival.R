@@ -1,54 +1,49 @@
-# vim_perm_sim() for survival data
-# TODO: update documentation
-#' Compute the variable importance of the predictors and their row-wise shadows
+#' Compute permutation variable importance for predictors and their row-wise
+#' shadows in the survival-data setting.
 #'
-#' `vim_perm_sim()` calculates repeatedly (`niters` times) the variable
+#' `vim_perm_sim_survival()` calculates repeatedly (`niters` times) the variable
 #' importance of the original values of the predictors and their row-wise
 #' permuted shadows. Each shadow's variable importance is computed based on a
-#' new permutation of the initial predictor values.
+#' new permutation of the initial predictor values. This is the survival
+#' equivalent of `vim_perm_sim()`.
 #'
 #' @param data Input data frame.
-
+#' @param time_column Character, name of the column containing the event time.
+#' @param status_column Character, name of the column containing the status
+#'  indicator. The current implementation of the function supports the
+#'  competing-risks setting.
 #' @param niters Numeric, number of permutations of the initial predictor
 #'   values, default is 100.
 #' @param importance Character, the type of variable importance to be calculated
-#'   for each independent variable. Argument passed to [ranger::ranger()],
+#'   for each independent variable. Argument passed to [randomForestSRC::rfsrc()],
 #'   default is `permutation`.
-#'
-#' @param num.trees Numeric, number of trees. Passed to [ranger::ranger()],
+#' @param num.trees Numeric, number of trees. Passed to [randomForestSRC::rfsrc()],
 #'   default is `max(2 * (ncol(data) - 1), 10000)`.
 #' @param data_name Character, name of the object passed as `data`. In
 #'   `shadow_vimp()` it is set automatically.
-#' @param ... Additional parameters passed to [ranger::ranger()].
+#' @param na.action Character, one of `"na.omit"` or `"na.impute"`. Action to
+#' take when the data contain `NA`. See [randomForestSRC::rfsrc()] and the
+#' vignette on this package’s survival-data extension for details.
+#' @param ... Additional parameters passed to [randomForestSRC::rfsrc()].
 #' @return List containing `niters` variable importance values for both the
 #'   original and row-wise permuted predictors.
 #' @noRd
 #' @import rlang dplyr
 #' @importFrom magrittr %>%
-#' @importFrom stats runif
 #' @importFrom randomForestSRC rfsrc
 #' @importFrom purrr map
 #' @examples
-#' data(mtcars)
-#' # When working with real data, increase num.trees value or keep the default
-#' # Here this parameter is set to a small value in order to reduce the runtime
+#' # Standard survival data: Veterans' Administration Lung Cancer study data
+#' data(veteran, package = "randomForestSRC")
 #'
-#' # Function to make sure proper number of cores is specified for multithreading
-#' safe_num_threads <- function(n) {
-#'   available <- parallel::detectCores()
-#'   if (n > available) available else n
-#' }
-#'
-#' #' # Standard use:
-#' out_seq <- vim_perm_sim(
-#'   data = mtcars, outcome_var = "vs", niters = 30,
-#'   num.trees = 50, num.threads = safe_num_threads(1)
-#' )
-#'
-# TODO: update documentation and examples according to the changes you implemented
-# notes about what should be included in the documentation
-# 1. explanation of handling NAs
-# 2. Info that input data must be only real valued, integer, factor or logical - NO characters allowed
+#' # When working with real data, increase num.trees value or keep the default.
+#' # Here this parameter is set to a small value in order to reduce the run time.
+#' # Standard use:
+#' vps_out <- vim_perm_sim_survival(data = veteran,
+#' time_column = "time",
+#' status_column = "status",
+#' niters = 30,
+#' num.trees = 30)
 vim_perm_sim_survival <- function(data,
                                   time_column,
                                   status_column,
