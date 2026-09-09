@@ -2,8 +2,8 @@ Package: shadowVIMP
 Title: Covariate Selection Based on VIMP Permutation-Like Testing
 Version: 1.0.2
 Authors@R: c(
-    person("Tim", "Mueller", , "mueller@staburo.de", role = "aut"),
-    person("Oktawia", "Miluch", , "oktawia.miluch@staburo.de", role = c("aut", "cre")),
+    person("Tim", "Mueller", , "mueller@staburo.de", role = c("aut", "cre")),
+    person("Oktawia", "Miluch", , "oktawia.miluch@staburo.de", role = "aut"),
     person("Staburo GmbH", role = c("cph", "fnd"))
   )
 Description: A statistical method for reducing the number of covariates in
