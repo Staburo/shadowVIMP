@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/OktawiaStaburo/shadowVIMP/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/OktawiaStaburo/shadowVIMP/actions)
+[![R-CMD-check](https://github.com/Staburo/shadowVIMP/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Staburo/shadowVIMP/actions)
 <!-- badges: end -->
 
 <!-- keep`README.md` up-to-date -> use`devtools::build_readme()`-->
@@ -65,20 +65,6 @@ global_num_threads <- 1
 # WARNING 1: When working with real data, increase the value of the niters parameter or leave it at the default value.
 # WARNING 2: To avoid potential issues with using multiple threads on CRAN, we set num.threads to 1, by default it is set to half of the available threads, which speeds up computation.
 vimp_seq <- shadow_vimp(data = mtcars, outcome_var = "vs", niters = c(30, 100, 150), num.threads = global_num_threads)
-#> alpha  0.3  
-#> 2025-06-05 10:25:11: dataframe = mtcars niters = 30 num.trees = 10000. Running step 1
-#> Variables remaining:  10 
-#> alpha  0.1  
-#> 2025-06-05 10:25:22: dataframe = mtcars niters = 100 num.trees = 10000. Running step 1
-#> 2025-06-05 10:25:37: dataframe = mtcars niters = 100 num.trees = 10000. Running step 50
-#> 2025-06-05 10:25:53: dataframe = mtcars niters = 100 num.trees = 10000. Running step 100
-#> Variables remaining:  9 
-#> alpha  0.05  
-#> 2025-06-05 10:25:54: dataframe = mtcars niters = 150 num.trees = 10000. Running step 1
-#> 2025-06-05 10:26:07: dataframe = mtcars niters = 150 num.trees = 10000. Running step 50
-#> 2025-06-05 10:26:22: dataframe = mtcars niters = 150 num.trees = 10000. Running step 100
-#> 2025-06-05 10:26:37: dataframe = mtcars niters = 150 num.trees = 10000. Running step 150
-#> Variables remaining:  7
 
 # Summary of the results
 vimp_seq
@@ -131,16 +117,16 @@ vimp_seq$step_all_covariates_removed
 # Check the time needed to execute each step of the algorithm and the entire procedure
 vimp_seq$time_elapsed
 #> $step_1
-#> [1] 0.181146
+#> [1] 0.1694246
 #> 
 #> $step_2
-#> [1] 0.5276175
+#> [1] 0.481499
 #> 
 #> $step_3
-#> [1] 0.7348017
+#> [1] 0.7132612
 #> 
 #> $total_time_mins
-#> [1] 1.443565
+#> [1] 1.364185
 
 # Check the call code that was used to create the inspected object
 vimp_seq$call

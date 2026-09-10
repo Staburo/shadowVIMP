@@ -11,17 +11,17 @@ A statistical method for reducing the number of covariates in an analysis by eva
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/OktawiaStaburo/shadowVIMP}
-  \item Report bugs at \url{https://github.com/OktawiaStaburo/shadowVIMP/issues}
+  \item \url{https://github.com/Staburo/shadowVIMP}
+  \item Report bugs at \url{https://github.com/Staburo/shadowVIMP/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: Oktawia Miluch \email{oktawia.miluch@staburo.de}
+\strong{Maintainer}: Tim Mueller \email{mueller@staburo.de}
 
 Authors:
 \itemize{
-  \item Tim Mueller \email{mueller@staburo.de}
+  \item Oktawia Miluch \email{oktawia.miluch@staburo.de}
 }
 
 Other contributors:

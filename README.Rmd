@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 # shadowVIMP
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/OktawiaStaburo/shadowVIMP/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/OktawiaStaburo/shadowVIMP/actions)
+[![R-CMD-check](https://github.com/Staburo/shadowVIMP/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Staburo/shadowVIMP/actions)
 <!-- badges: end -->
 
 <!-- keep`README.md` up-to-date -> use`devtools::build_readme()`-->
